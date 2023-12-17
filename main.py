@@ -9,13 +9,15 @@ from tensorboardX import SummaryWriter
 from utils import util, buffer
 from agent.sac import sac_agent
 from agent.vlsac import vlsac_agent
+from agent.ctrlsac import ctrlsac_agent
 
+EPS_GREEDY = 0.01
 
 if __name__ == "__main__":
 	
   parser = argparse.ArgumentParser()
   parser.add_argument("--dir", default=0, type=int)                     
-  parser.add_argument("--alg", default="sac")                     # Alg name (sac, vlsac)
+  parser.add_argument("--alg", default="ctrlsac")                     # Alg name (sac, vlsac, spedersac, ctrlsac)
   parser.add_argument("--env", default="HalfCheetah-v3")          # Environment name
   parser.add_argument("--seed", default=0, type=int)              # Sets Gym, PyTorch and Numpy seeds
   parser.add_argument("--start_timesteps", default=25e3, type=float)# Time steps initial random policy is used
@@ -67,6 +69,12 @@ if __name__ == "__main__":
     kwargs['extra_feature_steps'] = args.extra_feature_steps
     kwargs['feature_dim'] = args.feature_dim
     agent = vlsac_agent.VLSACAgent(**kwargs)
+  elif args.alg == 'ctrlsac':
+    kwargs['extra_feature_steps'] = args.extra_feature_steps
+    # hardcoded for now
+    kwargs['feature_dim'] = 2048  
+    kwargs['hidden_dim'] = 1024
+    agent = ctrlsac_agent.CTRLSACAgent(**kwargs)
   
   replay_buffer = buffer.ReplayBuffer(state_dim, action_dim)
 
@@ -87,7 +95,12 @@ if __name__ == "__main__":
     if t < args.start_timesteps:
       action = env.action_space.sample()
     else:
-      action = agent.select_action(state, explore=True)
+      # action = agent.select_action(state, explore=True)
+      # epsilon greedy as mentioned in the CTRL paper
+      if np.random.uniform(0, 1) < EPS_GREEDY:
+        action = env.action_space.sample()
+      else:
+        action = agent.select_action(state, explore=True)
 
     # Perform action
     next_state, reward, done, _ = env.step(action) 
