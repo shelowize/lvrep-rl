@@ -58,7 +58,7 @@ class Critic(nn.Module):
 		q2 = F.elu(self.l4(x)) #F.relu(self.l4(x))
 		q2 = q2.reshape([batch_size, self.num_noise, -1]).mean(dim=1)
 		q2 = F.elu(self.l5(q2)) #F.relu(self.l5(q2))
-		q2 = self.l3(q2)
+		q2 = self.l6(q2)
 
 		return q1, q2
 
